@@ -26,8 +26,12 @@ extern "js" fn query_inline_comment_input() -> Element =
   #|() => document.querySelector(".yunomi-inline-comment-editor #comment-input")
 
 ///|
-extern "js" fn query_all(selector : String) -> Array[Element] =
+extern "js" fn query_all_ffi(selector : String) -> FixedArray[Element] =
   #|(s) => [...document.querySelectorAll(s)]
+
+fn query_all(selector : String) -> Array[Element] {
+  Array::from_fixed_array(query_all_ffi(selector))
+}
 
 ///|
 /// Element properties
@@ -523,7 +527,7 @@ extern "js" fn null_element() -> Element =
 
 ///|
 /// Parse stored comments JSON (cli.cjs { comments, timestamp } format)
-extern "js" fn parse_stored_comments(json : String) -> Array[Array[String]] =
+extern "js" fn parse_stored_comments_ffi(json : String) -> FixedArray[FixedArray[String]] =
   #|(json) => {
   #|  try {
   #|    const data = JSON.parse(json);
@@ -532,6 +536,10 @@ extern "js" fn parse_stored_comments(json : String) -> Array[Array[String]] =
   #|    return Object.entries(comments).map(([k, v]) => [k, String(v.row||0), String(v.col||0), v.text||"", v.value||"", String(v.pending === true), String(v.sent !== false), String(v.surface || "preview"), String(v.quote || ""), String(v.image || "")]);
   #|  } catch(e) { return []; }
   #|}
+
+fn parse_stored_comments(json : String) -> Array[Array[String]] {
+  Array::from_fixed_array(parse_stored_comments_ffi(json).map(fn(__a1) { Array::from_fixed_array(__a1) }))
+}
 
 ///|
 /// Extract the saved global summary/decision comment from the same draft
@@ -573,7 +581,7 @@ extern "js" fn parse_stored_step(json : String) -> Int =
 ///|
 /// Extract the active inline editor target saved immediately before a preview
 /// refresh. Older drafts return an empty array and simply restore comments.
-extern "js" fn parse_stored_active_comment(json : String) -> Array[String] =
+extern "js" fn parse_stored_active_comment_ffi(json : String) -> FixedArray[String] =
   #|(json) => {
   #|  try {
   #|    const ui = JSON.parse(json).ui || {};
@@ -581,6 +589,10 @@ extern "js" fn parse_stored_active_comment(json : String) -> Array[String] =
   #|    return [String(ui.active_key), String(ui.active_row || 0), String(ui.active_col || 0), String(ui.active_surface || "preview")];
   #|  } catch (e) { return []; }
   #|}
+
+fn parse_stored_active_comment(json : String) -> Array[String] {
+  Array::from_fixed_array(parse_stored_active_comment_ffi(json))
+}
 
 ///|
 /// Whether Submit Review was open when the preview refresh began.
@@ -718,11 +730,18 @@ extern "js" fn cancel_animation_frame(id : Int) -> Unit =
 
 ///|
 /// Query within parent
-extern "js" fn query_all_in(
+extern "js" fn query_all_in_ffi(
   parent : Element,
   selector : String,
-) -> Array[Element] =
+) -> FixedArray[Element] =
   #|(parent, s) => [...(parent?.querySelectorAll(s) || [])]
+
+fn query_all_in(
+  parent : Element,
+  selector : String,
+) -> Array[Element] {
+  Array::from_fixed_array(query_all_in_ffi(parent, selector))
+}
 
 ///|
 /// Timers
@@ -799,12 +818,20 @@ extern "js" fn _get_pressure(e : Event) -> Double =
 
 ///|
 /// Touch Events (for pinch gestures)
-extern "js" fn get_touches(e : Event) -> Array[Event] =
+extern "js" fn get_touches_ffi(e : Event) -> FixedArray[Event] =
   #|(e) => Array.from(e.touches || [])
 
+fn get_touches(e : Event) -> Array[Event] {
+  Array::from_fixed_array(get_touches_ffi(e))
+}
+
 ///|
-extern "js" fn _get_changed_touches(e : Event) -> Array[Event] =
+extern "js" fn _get_changed_touches_ffi(e : Event) -> FixedArray[Event] =
   #|(e) => Array.from(e.changedTouches || [])
+
+fn _get_changed_touches(e : Event) -> Array[Event] {
+  Array::from_fixed_array(_get_changed_touches_ffi(e))
+}
 
 ///|
 extern "js" fn touch_get_client_x(touch : Event) -> Double =
@@ -1927,8 +1954,12 @@ extern "js" fn get_bounding_rect_height(el : Element) -> Double =
 
 ///|
 /// Get DATA array from window (injected by server)
-extern "js" fn js_get_data() -> Array[Array[String]] =
+extern "js" fn js_get_data_ffi() -> FixedArray[FixedArray[String]] =
   #|() => window.__DATA__ || []
+
+fn js_get_data() -> Array[Array[String]] {
+  Array::from_fixed_array(js_get_data_ffi().map(fn(__a1) { Array::from_fixed_array(__a1) }))
+}
 
 ///|
 /// Window selection API (returns Selection object, typed as Element for FFI convenience)
@@ -2045,8 +2076,12 @@ extern "js" fn _parse_int_or(s : String, fallback : Int) -> Int =
   #|}
 
 ///|
-extern "js" fn join_strings(values : Array[String], sep : String) -> String =
+extern "js" fn join_strings_ffi(values : FixedArray[String], sep : String) -> String =
   #|(values, sep) => values.join(sep)
+
+fn join_strings(values : Array[String], sep : String) -> String {
+  join_strings_ffi(FixedArray::from_array(values), sep)
+}
 
 ///|
 extern "js" fn replace_all_text(
@@ -2181,16 +2216,20 @@ extern "js" fn query_body() -> Element =
 
 ///|
 /// Element rect (returns [left, top, width, height])
-extern "js" fn get_bounding_rect(el : Element) -> Array[Double] =
+extern "js" fn get_bounding_rect_ffi(el : Element) -> FixedArray[Double] =
   #|(el) => {
   #|  if (!el) return [0, 0, 0, 0];
   #|  const r = el.getBoundingClientRect();
   #|  return [r.left, r.top, r.width, r.height];
   #|}
 
+fn get_bounding_rect(el : Element) -> Array[Double] {
+  Array::from_fixed_array(get_bounding_rect_ffi(el))
+}
+
 ///|
 /// Get SVG natural dimensions from viewBox or width/height attributes
-extern "js" fn get_svg_natural_size(svg : Element) -> Array[Double] =
+extern "js" fn get_svg_natural_size_ffi(svg : Element) -> FixedArray[Double] =
   #|(svg) => {
   #|  if (!svg) return [800, 600];
   #|  var vb = svg.getAttribute('viewBox');
@@ -2201,6 +2240,10 @@ extern "js" fn get_svg_natural_size(svg : Element) -> Array[Double] =
   #|  return [parseFloat(svg.getAttribute('width')) || svg.getBoundingClientRect().width || 800,
   #|          parseFloat(svg.getAttribute('height')) || svg.getBoundingClientRect().height || 600];
   #|}
+
+fn get_svg_natural_size(svg : Element) -> Array[Double] {
+  Array::from_fixed_array(get_svg_natural_size_ffi(svg))
+}
 
 ///| Expand SVG viewBox by padding (e.g. 40px each side for +80 total)
 
@@ -2232,8 +2275,12 @@ extern "js" fn clear_children(el : Element) -> Unit =
 
 ///|
 /// Get all children of an element
-extern "js" fn _get_children(el : Element) -> Array[Element] =
+extern "js" fn _get_children_ffi(el : Element) -> FixedArray[Element] =
   #|(el) => el ? Array.from(el.children) : []
+
+fn _get_children(el : Element) -> Array[Element] {
+  Array::from_fixed_array(_get_children_ffi(el))
+}
 
 ///|
 /// Shallow clone (no children)
@@ -2252,9 +2299,9 @@ extern "js" fn has_attribute(el : Element, name : String) -> Bool =
 
 ///|
 /// Setup intersection observer
-extern "js" fn setup_intersection_observer(
+extern "js" fn setup_intersection_observer_ffi(
   target : Element,
-  callback : (Array[Element]) -> Unit,
+  callback : (FixedArray[Element]) -> Unit,
   config_root : Element,
   config_margin : String,
   config_threshold : Double,
@@ -2266,6 +2313,16 @@ extern "js" fn setup_intersection_observer(
   #|  }, { root, rootMargin: margin, threshold });
   #|  observer.observe(target);
   #|}
+
+fn setup_intersection_observer(
+  target : Element,
+  callback : (Array[Element]) -> Unit,
+  config_root : Element,
+  config_margin : String,
+  config_threshold : Double,
+) -> Unit {
+  setup_intersection_observer_ffi(target, fn(__a1) { callback(Array::from_fixed_array(__a1)) }, config_root, config_margin, config_threshold)
+}
 
 ///|
 /// Check if element has a specific CSS class (visible state)
@@ -2318,7 +2375,7 @@ extern "js" fn normalize_preview_commentable(el : Element) -> Element =
   #|}
 
 ///|
-extern "js" fn get_preview_comment_targets() -> Array[Element] =
+extern "js" fn get_preview_comment_targets_ffi() -> FixedArray[Element] =
   #|() => {
   #|  const preview = document.querySelector("#md-preview");
   #|  if (!preview) return [];
@@ -2352,6 +2409,10 @@ extern "js" fn get_preview_comment_targets() -> Array[Element] =
   #|  }
   #|  return out;
   #|}
+
+fn get_preview_comment_targets() -> Array[Element] {
+  Array::from_fixed_array(get_preview_comment_targets_ffi())
+}
 
 ///|
 extern "js" fn table_cell_neighbor(el : Element, direction : String) -> Element =
@@ -3213,8 +3274,12 @@ extern "js" fn parse_json_string_field(json : String, field : String) -> String 
   #|(json, field) => { try { return String(JSON.parse(json)[field] || ""); } catch { return ""; } }
 
 ///|
-extern "js" fn parse_summary_images(json : String) -> Array[String] =
+extern "js" fn parse_summary_images_ffi(json : String) -> FixedArray[String] =
   #|(json) => { try { const images = JSON.parse(json).summaryImages; return Array.isArray(images) ? images.map(String) : []; } catch (_) { return []; } }
+
+fn parse_summary_images(json : String) -> Array[String] {
+  Array::from_fixed_array(parse_summary_images_ffi(json))
+}
 
 ///|
 extern "js" fn history_attachment_html(json : String) -> String =

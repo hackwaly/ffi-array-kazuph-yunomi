@@ -83,8 +83,12 @@ extern "js" fn fs_realpath_sync(path : String) -> String = "realpathSync"
 
 ///|
 /// Node.js process
-extern "js" fn get_argv() -> Array[String] =
+extern "js" fn get_argv_ffi() -> FixedArray[String] =
   #|() => process.argv
+
+fn get_argv() -> Array[String] {
+  Array::from_fixed_array(get_argv_ffi())
+}
 
 ///|
 extern "js" fn process_exec_path() -> String =
@@ -141,8 +145,8 @@ extern "js" fn gen_instance_id() -> String =
   #|() => Date.now().toString(36) + "-" + process.pid + "-" + Math.random().toString(36).slice(2, 8)
 
 ///|
-extern "js" fn create_share_token(
-  files : Array[String],
+extern "js" fn create_share_token_ffi(
+  files : FixedArray[String],
   host : String,
   port : Int,
 ) -> String =
@@ -167,6 +171,14 @@ extern "js" fn create_share_token(
   #|  fs.writeFileSync(path.join(dir, `${token}.json`), JSON.stringify(meta, null, 2));
   #|  return token;
   #|}
+
+fn create_share_token(
+  files : Array[String],
+  host : String,
+  port : Int,
+) -> String {
+  create_share_token_ffi(FixedArray::from_array(files), host, port)
+}
 
 ///|
 extern "js" fn update_share_token_port(token : String, port : Int) -> Unit =
@@ -1054,7 +1066,7 @@ extern "js" fn error_code(err : JsValue) -> String =
 
 ///|
 /// JSON parse comments array from body
-extern "js" fn json_parse_comments(json_str : String) -> Array[Array[String]] =
+extern "js" fn json_parse_comments_ffi(json_str : String) -> FixedArray[FixedArray[String]] =
   #|(s) => {
   #|  try {
   #|    const obj = JSON.parse(s);
@@ -1073,6 +1085,10 @@ extern "js" fn json_parse_comments(json_str : String) -> Array[Array[String]] =
   #|    ]);
   #|  } catch(e) { return []; }
   #|}
+
+fn json_parse_comments(json_str : String) -> Array[Array[String]] {
+  Array::from_fixed_array(json_parse_comments_ffi(json_str).map(fn(__a1) { Array::from_fixed_array(__a1) }))
+}
 
 ///|
 extern "js" fn json_with_comment_image_paths(
@@ -1103,8 +1119,12 @@ extern "js" fn json_parse_first_file(json_str : String) -> String =
   #|(s) => { try { const o = JSON.parse(s); return String((o.files || [])[0] || ""); } catch(e) { return ""; } }
 
 ///|
-extern "js" fn json_parse_review_files(json_str : String) -> Array[String] =
+extern "js" fn json_parse_review_files_ffi(json_str : String) -> FixedArray[String] =
   #|(s) => { try { return Array.isArray(JSON.parse(s).files) ? JSON.parse(s).files.map(String) : []; } catch (_) { return []; } }
+
+fn json_parse_review_files(json_str : String) -> Array[String] {
+  Array::from_fixed_array(json_parse_review_files_ffi(json_str))
+}
 
 ///|
 /// Home directory
@@ -1141,7 +1161,11 @@ extern "js" fn fs_mkdtemp_sync(prefix : String) -> String = "mkdtempSync"
 ///|
 /// readdirSync
 #module("node:fs")
-extern "js" fn fs_readdir_sync_raw(path : String) -> Array[String] = "readdirSync"
+extern "js" fn fs_readdir_sync_raw_ffi(path : String) -> FixedArray[String] = "readdirSync"
+
+fn fs_readdir_sync_raw(path : String) -> Array[String] {
+  Array::from_fixed_array(fs_readdir_sync_raw_ffi(path))
+}
 
 ///|
 /// rmSync
@@ -1193,10 +1217,16 @@ extern "js" fn try_call_void(func : () -> Unit) -> Unit =
 
 ///|
 /// Try-catch wrapper: () -> Array[String]
-extern "js" fn try_call_array_string(
-  func : () -> Array[String],
-) -> Array[String] =
+extern "js" fn try_call_array_string_ffi(
+  func : () -> FixedArray[String],
+) -> FixedArray[String] =
   #|(fn) => { try { return fn(); } catch(e) { return []; } }
+
+fn try_call_array_string(
+  func : () -> Array[String],
+) -> Array[String] {
+  Array::from_fixed_array(try_call_array_string_ffi(fn() { FixedArray::from_array(func()) }))
+}
 
 ///|
 /// Decode buffer with encoding (TextDecoder is a global in Node.js)
@@ -1280,8 +1310,12 @@ extern "js" fn js_spawn_opts_utf8_pipe_cwd(cwd : String) -> JsValue =
   #|(cwd) => ({ cwd, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] })
 
 ///|
-extern "js" fn js_array_from_strings(args : Array[String]) -> JsValue =
+extern "js" fn js_array_from_strings_ffi(args : FixedArray[String]) -> JsValue =
   #|(args) => Array.from(args)
+
+fn js_array_from_strings(args : Array[String]) -> JsValue {
+  js_array_from_strings_ffi(FixedArray::from_array(args))
+}
 
 ///|
 extern "js" fn js_rm_opts() -> JsValue =
@@ -1318,20 +1352,30 @@ extern "js" fn iso_now() -> String =
 
 ///|
 /// JSON parse images array (JSON is a global)
-extern "js" fn json_parse_images(json_str : String) -> Array[String] =
+extern "js" fn json_parse_images_ffi(json_str : String) -> FixedArray[String] =
   #|(s) => { try { return JSON.parse(s).summaryImages || []; } catch(e) { return []; } }
+
+fn json_parse_images(json_str : String) -> Array[String] {
+  Array::from_fixed_array(json_parse_images_ffi(json_str))
+}
 
 ///|
 /// JSON parse mermaid errors array [{line, message}]
-extern "js" fn json_parse_mermaid_errors(
+extern "js" fn json_parse_mermaid_errors_ffi(
   json_str : String,
-) -> Array[Array[String]] =
+) -> FixedArray[FixedArray[String]] =
   #|(s) => {
   #|  try {
   #|    const obj = JSON.parse(s);
   #|    return (obj.mermaidErrors || []).map(e => [String(e.line || 0), e.message || ""]);
   #|  } catch(e) { return []; }
   #|}
+
+fn json_parse_mermaid_errors(
+  json_str : String,
+) -> Array[Array[String]] {
+  Array::from_fixed_array(json_parse_mermaid_errors_ffi(json_str).map(fn(__a1) { Array::from_fixed_array(__a1) }))
+}
 
 ///|
 /// Parse URL query parameters (URL is a global)
@@ -1362,7 +1406,7 @@ extern "js" fn mux_global_route_is_valid(url : String) -> Bool =
   #|}
 
 ///|
-extern "js" fn mux_static_target(url : String, count : Int) -> Array[String] =
+extern "js" fn mux_static_target_ffi(url : String, count : Int) -> FixedArray[String] =
   #|(url, count) => {
   #|  try {
   #|    const u = new URL("http://localhost" + url);
@@ -1373,6 +1417,10 @@ extern "js" fn mux_static_target(url : String, count : Int) -> Array[String] =
   #|    return [String(index), match[2]];
   #|  } catch (_) { return []; }
   #|}
+
+fn mux_static_target(url : String, count : Int) -> Array[String] {
+  Array::from_fixed_array(mux_static_target_ffi(url, count))
+}
 
 ///|
 extern "js" fn url_path(url : String) -> String =
@@ -1407,7 +1455,7 @@ extern "js" fn on_spawn_close_with_stderr(
 
 ///|
 /// Parse pts_time values from ffmpeg showinfo filter stderr output
-extern "js" fn parse_showinfo_timestamps(stderr : String) -> Array[Double] =
+extern "js" fn parse_showinfo_timestamps_ffi(stderr : String) -> FixedArray[Double] =
   #|(stderr) => {
   #|  const times = [];
   #|  for (const line of stderr.split('\n')) {
@@ -1417,10 +1465,18 @@ extern "js" fn parse_showinfo_timestamps(stderr : String) -> Array[Double] =
   #|  return times;
   #|}
 
+fn parse_showinfo_timestamps(stderr : String) -> Array[Double] {
+  Array::from_fixed_array(parse_showinfo_timestamps_ffi(stderr))
+}
+
 ///|
 /// Sort array of strings in place
-extern "js" fn sort_strings(arr : Array[String]) -> Array[String] =
+extern "js" fn sort_strings_ffi(arr : FixedArray[String]) -> FixedArray[String] =
   #|(arr) => arr.sort()
+
+fn sort_strings(arr : Array[String]) -> Array[String] {
+  Array::from_fixed_array(sort_strings_ffi(FixedArray::from_array(arr)))
+}
 
 ///|
 extern "js" fn on_spawn_error(proc : JsValue, handler : () -> Unit) -> Unit =
@@ -1532,12 +1588,12 @@ let bound_review_session_dir : Ref[String] = Ref("")
 
 ///|
 /// Canonical session identity: repo realpath, raw branch, mode, ordered files.
-extern "js" fn js_review_session_dir(
+extern "js" fn js_review_session_dir_ffi(
   repo_root : String,
   branch : String,
   sanitized_branch : String,
   mode : String,
-  files : Array[String],
+  files : FixedArray[String],
 ) -> String =
   #|(repoRoot, branch, sanitizedBranch, mode, files) => {
   #|  const crypto = process.getBuiltinModule("node:crypto");
@@ -1567,6 +1623,16 @@ extern "js" fn js_review_session_dir(
   #|  }
   #|  return sessionDir;
   #|}
+
+fn js_review_session_dir(
+  repo_root : String,
+  branch : String,
+  sanitized_branch : String,
+  mode : String,
+  files : Array[String],
+) -> String {
+  js_review_session_dir_ffi(repo_root, branch, sanitized_branch, mode, FixedArray::from_array(files))
+}
 
 ///|
 /// Resolve the cwd review session. comment_id may be empty.
@@ -1909,9 +1975,9 @@ fn ensure_review_state(file_path : String) -> Unit {
 }
 
 ///|
-extern "js" fn js_review_register_mux_files(
+extern "js" fn js_review_register_mux_files_ffi(
   json : String,
-  files : Array[String],
+  files : FixedArray[String],
 ) -> String =
   #|(json, files) => {
   #|  let review;
@@ -1929,6 +1995,13 @@ extern "js" fn js_review_register_mux_files(
   #|  return JSON.stringify(review, null, 2);
   #|}
 
+fn js_review_register_mux_files(
+  json : String,
+  files : Array[String],
+) -> String {
+  js_review_register_mux_files_ffi(json, FixedArray::from_array(files))
+}
+
 ///|
 fn register_review_mux_files(file_path : String, files : Array[String]) -> Unit {
   ensure_review_state(file_path)
@@ -1941,14 +2014,14 @@ fn register_review_mux_files(file_path : String, files : Array[String]) -> Unit 
 
 ///|
 /// Returns accepted, retry, replaced, complete_approve, complete_changes, or stale.
-extern "js" fn js_review_mux_submit(
+extern "js" fn js_review_mux_submit_ffi(
   json : String,
   request_body : String,
   body : String,
   file : String,
-  files : Array[String],
-  source_lines : Array[String],
-) -> Array[String] =
+  files : FixedArray[String],
+  source_lines : FixedArray[String],
+) -> FixedArray[String] =
   #|(json, requestBody, body, file, files, sourceLines) => {
   #|  let review, submit;
   #|  try { review = JSON.parse(json || "{}"); submit = JSON.parse(body || "{}"); } catch (_) { return ["stale", json]; }
@@ -1996,6 +2069,17 @@ extern "js" fn js_review_mux_submit(
   #|  }
   #|  return finish(current.decision === "approve" ? "complete_approve" : "complete_changes");
   #|}
+
+fn js_review_mux_submit(
+  json : String,
+  request_body : String,
+  body : String,
+  file : String,
+  files : Array[String],
+  source_lines : Array[String],
+) -> Array[String] {
+  Array::from_fixed_array(js_review_mux_submit_ffi(json, request_body, body, file, FixedArray::from_array(files), FixedArray::from_array(source_lines)))
+}
 
 ///|
 fn review_mux_submit(
@@ -2166,11 +2250,11 @@ fn write_review_server(
 }
 
 ///|
-extern "js" fn js_review_submit_update(
+extern "js" fn js_review_submit_update_ffi(
   json : String,
   body : String,
   file : String,
-  source_lines : Array[String],
+  source_lines : FixedArray[String],
 ) -> String =
   #|(json, body, file, sourceLines) => {
   #|  const review = JSON.parse(json || "{}");
@@ -2248,6 +2332,15 @@ extern "js" fn js_review_submit_update(
   #|  }
   #|  return JSON.stringify(review, null, 2);
   #|}
+
+fn js_review_submit_update(
+  json : String,
+  body : String,
+  file : String,
+  source_lines : Array[String],
+) -> String {
+  js_review_submit_update_ffi(json, body, file, FixedArray::from_array(source_lines))
+}
 
 ///|
 fn update_review_on_submit(
@@ -3467,14 +3560,18 @@ extern "js" fn env_path() -> String =
   #|() => process.env.PATH || ""
 
 ///|
-extern "js" fn split_path_list(path : String) -> Array[String] =
+extern "js" fn split_path_list_ffi(path : String) -> FixedArray[String] =
   #|(path) => path.split(":").filter(Boolean)
 
+fn split_path_list(path : String) -> Array[String] {
+  Array::from_fixed_array(split_path_list_ffi(path))
+}
+
 ///|
-extern "js" fn split_notify_command(
+extern "js" fn split_notify_command_ffi(
   command : String,
   msg : String,
-) -> Array[String] =
+) -> FixedArray[String] =
   #|(command, msg) => {
   #|  const out = [];
   #|  let cur = "", quote = "";
@@ -3503,6 +3600,13 @@ extern "js" fn split_notify_command(
   #|  if (replaced.length > 0 && !hadPlaceholder) replaced.push(msg);
   #|  return replaced;
   #|}
+
+fn split_notify_command(
+  command : String,
+  msg : String,
+) -> Array[String] {
+  Array::from_fixed_array(split_notify_command_ffi(command, msg))
+}
 
 ///|
 fn json_array_of_strings(values : Array[String]) -> String {

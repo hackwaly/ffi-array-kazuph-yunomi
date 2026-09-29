@@ -72,9 +72,9 @@ fn collect_history_json(root : String) -> Array[String] {
 }
 
 ///|
-extern "js" fn js_status_output(
-  paths : Array[String],
-  jsons : Array[String],
+extern "js" fn js_status_output_ffi(
+  paths : FixedArray[String],
+  jsons : FixedArray[String],
   json_output : Bool,
 ) -> String =
   #|(paths, jsons, jsonOutput) => {
@@ -105,9 +105,17 @@ extern "js" fn js_status_output(
   #|  return lines.join("\n") + "\n";
   #|}
 
+fn js_status_output(
+  paths : Array[String],
+  jsons : Array[String],
+  json_output : Bool,
+) -> String {
+  js_status_output_ffi(FixedArray::from_array(paths), FixedArray::from_array(jsons), json_output)
+}
+
 ///|
-extern "js" fn js_stats_output(
-  history_jsons : Array[String],
+extern "js" fn js_stats_output_ffi(
+  history_jsons : FixedArray[String],
   json_output : Bool,
 ) -> String =
   #|(historyJsons, jsonOutput) => {
@@ -148,13 +156,20 @@ extern "js" fn js_stats_output(
   #|  ].join("\n") + "\n";
   #|}
 
+fn js_stats_output(
+  history_jsons : Array[String],
+  json_output : Bool,
+) -> String {
+  js_stats_output_ffi(FixedArray::from_array(history_jsons), json_output)
+}
+
 ///|
-extern "js" fn js_cleanup_candidates(
-  paths : Array[String],
-  jsons : Array[String],
-  mtimes : Array[Double],
+extern "js" fn js_cleanup_candidates_ffi(
+  paths : FixedArray[String],
+  jsons : FixedArray[String],
+  mtimes : FixedArray[Double],
   older_than_days : Int,
-) -> Array[String] =
+) -> FixedArray[String] =
   #|(paths, jsons, mtimes, days) => {
   #|  const cutoff = Date.now() - Number(days || 90) * 24 * 60 * 60 * 1000;
   #|  const out = [];
@@ -172,9 +187,18 @@ extern "js" fn js_cleanup_candidates(
   #|  return out;
   #|}
 
+fn js_cleanup_candidates(
+  paths : Array[String],
+  jsons : Array[String],
+  mtimes : Array[Double],
+  older_than_days : Int,
+) -> Array[String] {
+  Array::from_fixed_array(js_cleanup_candidates_ffi(FixedArray::from_array(paths), FixedArray::from_array(jsons), FixedArray::from_array(mtimes), older_than_days))
+}
+
 ///|
-extern "js" fn js_cleanup_output(
-  deleted : Array[String],
+extern "js" fn js_cleanup_output_ffi(
+  deleted : FixedArray[String],
   json_output : Bool,
 ) -> String =
   #|(deleted, jsonOutput) => {
@@ -182,6 +206,13 @@ extern "js" fn js_cleanup_output(
   #|  if (!deleted.length) return "No approved yunomi reviews matched cleanup.\n";
   #|  return [`Deleted ${deleted.length} approved yunomi review(s):`, ...deleted].join("\n") + "\n";
   #|}
+
+fn js_cleanup_output(
+  deleted : Array[String],
+  json_output : Bool,
+) -> String {
+  js_cleanup_output_ffi(FixedArray::from_array(deleted), json_output)
+}
 
 ///|
 fn handle_meta_status(json_output : Bool) -> Unit {
